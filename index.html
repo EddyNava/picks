@@ -60,7 +60,7 @@ select.alt{font:inherit;color:var(--ink);background:var(--bg);border:1px solid v
   </header>
   <div class="how">
     <b>Cómo usarla:</b> cada partido trae la <b>línea justa</b> del modelo y la probabilidad de cada apuesta.
-    En "¿Vale la pena?" escribe la línea y el momio que ves en Playdoit y te dice si tiene valor.
+    En los menús de hándicap y de más/menos puedes mover la línea para ver cómo cambia la probabilidad.
     <b style="color:var(--good)">Verde</b> = el modelo difiere bastante del mercado (revísalo primero), <b style="color:var(--warn)">amarillo</b> = moderado, gris = en línea.
     No es garantía: incluso con valor se pierde seguido. Apuesta poco y con límites.
   </div>
@@ -150,16 +150,7 @@ function render(){
       ${(g.props||[]).length?`<details><summary>Proyección de jugadores (${g.props.length})</summary><div class="scroll"><table>
         <tr><th>Jugador</th><th>Min</th><th>Pts</th><th>Reb</th><th>Ast</th><th>3PM</th><th>PRA</th></tr>
         ${g.props.map(p=>`<tr><td>${p.name} <span class="time">${p.team}</span></td><td class="n">${p.min}</td><td class="n">${p.media.pts}</td><td class="n">${p.media.reb}</td><td class="n">${p.media.ast}</td><td class="n">${p.media.tpm}</td><td class="n">${p.media.pra}</td></tr>`).join('')}
-      </table></div></details>`:''}
-      <div><div class="time" style="margin-bottom:4px"><b>¿Vale la pena?</b> Elige la apuesta, ajusta la línea si la casa tiene otra y escribe su momio:</div>
-        <div class="calc">
-          <div><label for="m${g.id}">Mercado</label><select id="m${g.id}"><option value="spread">Spread</option><option value="total">Total</option><option value="ml">Ganador</option></select></div>
-          <div><label for="s${g.id}">Selección</label><select id="s${g.id}"></select></div>
-          <div><label for="l${g.id}">Línea</label><input id="l${g.id}" inputmode="decimal" placeholder="${sgn(sp_.linea_local)}"></div>
-          <div><label for="o${g.id}">Momio</label><input id="o${g.id}" inputmode="decimal" placeholder="-110"></div>
-        </div>
-        <div class="res idle" id="r${g.id}" style="margin-top:6px">Escribe el momio que paga la casa.</div>
-      </div>`;
+      </table></div></details>`:''}`;
     box.appendChild(el);
     // menús de líneas alternas: 10.5 puntos arriba y abajo de la línea del modelo
     const steps = Array.from({length:21}, (_,i)=>i-10);
@@ -177,16 +168,6 @@ function render(){
       const upd = () => { out.textContent = pct(fn(parseFloat(sel.value))); };
       sel.onchange = upd; upd();
     });
-    const M=$(`#m${g.id}`), S=$(`#s${g.id}`), L=$(`#l${g.id}`), O=$(`#o${g.id}`), R=$(`#r${g.id}`);
-    const defLine=()=>{ L.value = M.value==='ml' ? '' : M.value==='total' ? to.linea : (S.value==='local' ? sgn(sp_.linea_local) : sgn(-sp_.linea_local)); };
-    const fill=()=>{ S.innerHTML = M.value==='total' ? '<option value="over">Más de</option><option value="under">Menos de</option>'
-      : `<option value="local">${g.local}</option><option value="visitante">${g.visitante}</option>`; L.disabled = M.value==='ml'; defLine(); calc(); };
-    const calc=()=>{ const d=parseOdds(O.value); let l=parseFloat(String(L.value).replace(',','.')); if(M.value==='ml') l=0;
-      if(!d||isNaN(l)){R.className='res idle';R.textContent='Escribe el momio que paga la casa (y cambia la línea si es distinta).';return;}
-      const p=probs(g,M.value,S.value,l), b=d-1, ev=p.w*b-p.l, min=1+(g.edge_min+p.l)/Math.max(p.w,1e-6), ok=ev>=g.edge_min;
-      R.className='res '+(ok?'good':'bad');
-      R.textContent = `${ok?'✅ Tiene valor':'❌ Sin valor'} · prob ${pct(p.w)}${p.p>.005?` (empate ${pct(p.p)})`:''} · ganancia esperada ${ev>=0?'+':''}${pct(ev)}${ok?'':` · necesitas ${amer(min)} o mejor`}`; };
-    M.onchange=fill; S.onchange=()=>{defLine();calc();}; L.oninput=calc; O.oninput=calc; fill();
   });
   $('#count').textContent = `${shown} de ${sp.partidos.length} partidos`;
   if (!shown) box.innerHTML='<p class="empty">Ningún partido con ese color. Prueba "Todos".</p>';
