@@ -66,10 +66,6 @@ select.alt{font:inherit;color:var(--ink);background:var(--bg);border:1px solid v
     No es garantía: incluso con valor se pierde seguido. Apuesta poco y con límites.
   </div>
   <div class="bar" id="sports"></div>
-  <div class="bar" id="filters">
-    <button data-f="todos" class="on">Todos</button><button data-f="fuerte">Solo "No coinciden"</button><button data-f="media">No coinciden y difieren un poco</button>
-    <span class="time" id="count"></span>
-  </div>
   <div id="games" class="wrap" style="gap:12px"></div>
 </div>
 
@@ -161,16 +157,15 @@ function signal(g, a){  // etiquetas: Coinciden / Difieren un poco / No coincide
   return {...s, l: s.k==='fuerte' ? `🔍 No coinciden: revisar · ${s.l}` : s.k==='media' ? `Difieren un poco · ${s.l}` : 'Coinciden'};
 }
 let SPORT = (DATA.deportes[0]||{}).deporte, F = 'todos';
-try { F = localStorage.getItem('pf') || 'todos'; } catch(e) {}
+
 function render(){
   const sp = DATA.deportes.find(d=>d.deporte===SPORT);
   $('#sports').innerHTML = DATA.deportes.map(d=>`<button data-s="${d.deporte}" class="${d.deporte===SPORT?'on':''}">${d.deporte==='ucl'?'Champions':d.deporte==='ligamx'?'Liga MX':d.deporte.toUpperCase()} · ${d.partidos.length}</button>`).join('');
   document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{SPORT=b.dataset.s;render();});
-  document.querySelectorAll('[data-f]').forEach(b=>b.classList.toggle('on',b.dataset.f===F));
   const [y,m,d] = DATA.fecha.split('-');
   $('#sub').textContent = sp ? `Actualizado ${(sp.generado||'').replace('T',' ')} · ${sp.nota}` : 'Sin partidos publicados.';
   const box = $('#games'); box.innerHTML='';
-  if (!sp || !sp.partidos.length){ box.innerHTML='<p class="empty">No hay partidos publicados para esta fecha.</p>'; $('#count').textContent=''; return; }
+  if (!sp || !sp.partidos.length){ box.innerHTML='<p class="empty">No hay partidos publicados para esta fecha.</p>'; return; }
   const nfl = SPORT==='nfl'; let shown=0;
   sp.partidos.forEach(g=>{
     if (SPORT==='ucl'||SPORT==='ligamx'){ const s2=soccerSignal(g); if (!(F==='todos'||s2.k==='fuerte'||(F==='media'&&s2.k==='media'))) return; shown++; box.appendChild(soccerCard(g,s2)); return; }
@@ -223,9 +218,9 @@ function render(){
       sel.onchange = upd; upd();
     });
   });
-  $('#count').textContent = `${shown} de ${sp.partidos.length} partidos`;
+
   if (!shown) box.innerHTML='<p class="empty">Ningún partido con ese color. Prueba "Todos".</p>';
 }
-document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{F=b.dataset.f; try{localStorage.setItem('pf',F);}catch(e){} render();});
+
 render();
 </script>
