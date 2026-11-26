@@ -45,6 +45,7 @@ details summary{cursor:pointer;color:var(--muted);font-size:13px}
 details ul{margin:6px 0 0;padding-left:18px;font-size:13px}
 .calc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .calc label{font-size:11px;color:var(--muted);display:block}
+select.alt{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 6px;max-width:100%}
 .calc input,.calc select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
 .res{font-size:13.5px;padding:8px 10px;border-radius:8px}
 .res.good{background:var(--good-bg);color:var(--good)} .res.bad{background:var(--bad-bg);color:var(--bad)} .res.idle{color:var(--muted);background:var(--chip)}
@@ -138,10 +139,10 @@ function render(){
       </div>
       <div class="scroll"><table>
         <tr><th>Apuesta</th><th>Probabilidad</th></tr>
-        <tr><td>${g.local} ${sgn(sp_.linea_local)}</td><td class="n">${pct(sp_.local.prob)}</td></tr>
-        <tr><td>${g.visitante} ${sgn(-sp_.linea_local)}</td><td class="n">${pct(sp_.visitante.prob)}</td></tr>
-        <tr><td>Más de ${to.linea}</td><td class="n">${pct(to.over.prob)}</td></tr>
-        <tr><td>Menos de ${to.linea}</td><td class="n">${pct(to.under.prob)}</td></tr>
+        <tr><td><select class="alt" data-k="hl" aria-label="Hándicap ${g.local}"></select></td><td class="n" data-p="hl"></td></tr>
+        <tr><td><select class="alt" data-k="hv" aria-label="Hándicap ${g.visitante}"></select></td><td class="n" data-p="hv"></td></tr>
+        <tr><td><select class="alt" data-k="ov" aria-label="Más de"></select></td><td class="n" data-p="ov"></td></tr>
+        <tr><td><select class="alt" data-k="un" aria-label="Menos de"></select></td><td class="n" data-p="un"></td></tr>
         <tr><td>Gana ${g.local}</td><td class="n">${pct(ml.local.prob)}</td></tr>
         <tr><td>Gana ${g.visitante}</td><td class="n">${pct(ml.visitante.prob)}</td></tr>
       </table></div>
@@ -160,6 +161,22 @@ function render(){
         <div class="res idle" id="r${g.id}" style="margin-top:6px">Escribe el momio que paga la casa.</div>
       </div>`;
     box.appendChild(el);
+    // menús de líneas alternas: 10.5 puntos arriba y abajo de la línea del modelo
+    const steps = Array.from({length:21}, (_,i)=>i-10);
+    const opts = (base, lab) => steps.map(k=>{const v=base+k; return `<option value="${v}" ${k===0?'selected':''}>${lab(v)}</option>`;}).join('');
+    const hl0 = sp_.linea_local, tl0 = to.linea;
+    const cfg = {
+      hl: [opts(hl0, v=>`${g.local} ${sgn(v)}`), v=>probs(g,'spread','local',v).w],
+      hv: [opts(-hl0, v=>`${g.visitante} ${sgn(v)}`), v=>probs(g,'spread','visitante',v).w],
+      ov: [opts(tl0, v=>`Más de ${v}`), v=>probs(g,'total','over',v).w],
+      un: [opts(tl0, v=>`Menos de ${v}`), v=>probs(g,'total','under',v).w],
+    };
+    el.querySelectorAll('select.alt').forEach(sel=>{
+      const [html, fn] = cfg[sel.dataset.k]; sel.innerHTML = html;
+      const out = el.querySelector(`[data-p="${sel.dataset.k}"]`);
+      const upd = () => { out.textContent = pct(fn(parseFloat(sel.value))); };
+      sel.onchange = upd; upd();
+    });
     const M=$(`#m${g.id}`), S=$(`#s${g.id}`), L=$(`#l${g.id}`), O=$(`#o${g.id}`), R=$(`#r${g.id}`);
     const defLine=()=>{ L.value = M.value==='ml' ? '' : M.value==='total' ? to.linea : (S.value==='local' ? sgn(sp_.linea_local) : sgn(-sp_.linea_local)); };
     const fill=()=>{ S.innerHTML = M.value==='total' ? '<option value="over">Más de</option><option value="under">Menos de</option>'
